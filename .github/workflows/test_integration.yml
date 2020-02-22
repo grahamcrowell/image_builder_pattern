@@ -10,8 +10,8 @@ jobs:
         with:
           remote_base_image: grahamcrowell/github_action_remote_image_cache
           name: grahamcrowell/github_action_remote_image_cache
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
           watch_file_regex: Pipfile*
       - name: Make Dev
         run: make dev
