@@ -9,4 +9,3 @@ RUN pip install /tmp/*.whl
 COPY . .
 ENV PATH="/app/bin:${PATH}"
 # only in Dockerfile.dev
-RUN pip install --editable .
