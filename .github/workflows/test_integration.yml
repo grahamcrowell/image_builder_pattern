@@ -13,5 +13,4 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
           watch_file_regex: Pipfile*
       - name: Make Dev
-        uses: grahamcrowell/github_action_remote_image_cache@master
         run: make dev
