@@ -1,0 +1,40 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[requires]
+python_version = "3.8"
+
+[dev-packages]
+pytest = "*"
+pytest-cov = "*"
+pytest-mock = "*"
+pytest-watch = "*"
+requests-mock = "*"
+pylint = "*"
+isort = "*"
+yapf = "*"
+wheel = "*"
+m2r = "*"
+sphinx = "*"
+sphinx_rtd_theme = "*"
+sphinxcontrib-napoleon = "*"
+sphinxcontrib-mermaid = "*"
+pyment = "*"
+# dag parser
+# pydot = "*"
+# graphviz = "*"
+# pygraphviz = "*"
+# matplotlib = "*"
+rope = "*"
+
+[packages]
+jsonschema = ">=3"
+requests = "*"
+click = "*"
+networkx = "*"
+pydantic = "*"
+pendulum = "*"
+python-dotenv = "*"
+pyyaml = "*"

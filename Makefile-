@@ -1,0 +1,180 @@
+APP_NAME=rc-orchestrator
+BASE_DOCKER_TAG=base
+BASE_DOCKER_CONTAINER=${APP_NAME}-${BASE_DOCKER_TAG}
+BASE_DOCKER_IMAGE=${APP_NAME}:${BASE_DOCKER_TAG}
+DEV_DOCKER_TAG=dev
+DEV_DOCKER_IMAGE=${APP_NAME}:${DEV_DOCKER_TAG}
+PROD_DOCKER_TAG=prod
+PROD_DOCKER_IMAGE=${APP_NAME}:${PROD_DOCKER_TAG}
+SOURCE_ROOT=rc_orchestrator
+TEST_ROOT=tests
+ORG=rubikloud
+
+.PHONY: help
+
+help:
+	@echo "-------------------"
+	@echo "config:"
+	@echo "-------------------"
+	@echo "APP_NAME: ${APP_NAME}"
+	@echo "BASE_DOCKER_TAG: ${BASE_DOCKER_TAG}"
+	@echo "BASE_DOCKER_IMAGE: ${BASE_DOCKER_IMAGE}"
+	@echo "DEV_DOCKER_TAG: ${DEV_DOCKER_TAG}"
+	@echo "DEV_DOCKER_IMAGE: ${DEV_DOCKER_IMAGE}"
+	@echo "PROD_DOCKER_TAG: ${PROD_DOCKER_TAG}"
+	@echo "PROD_DOCKER_IMAGE: ${PROD_DOCKER_IMAGE}"
+	@echo "SOURCE_ROOT: ${SOURCE_ROOT}"
+	@echo "TEST_ROOT: ${TEST_ROOT}"
+	@echo "-------------------"
+	@echo ""
+	@echo "-------------------"
+	@echo "recipes:"
+	@echo "-------------------"
+	@echo "clean: clean all generated artifacts (docker-compose volumnes, build/, dist/, docs/_build/, *.pyc, etc)"
+	@echo "rebuild-base: lock pipenv and rebuild base image (without cache): ${BASE_DOCKER_IMAGE}"
+	@echo "rebuild-dev: rebuild dev image (without cache): ${DEV_DOCKER_IMAGE}"
+	@echo "rebuild-all: complete rebuild (without cache): ${DEV_DOCKER_IMAGE}"
+	@echo "base: build base image (with cache): ${BASE_DOCKER_IMAGE}"
+	@echo "dev: base build dev (with cache) image on top of base image: ${DEV_DOCKER_IMAGE}"
+	@echo "version: dev show ${APP_NAME} version in ${DEV_DOCKER_IMAGE}"
+	@echo "watch-test: pytest watch via docker-compose.test.yml"
+	# @echo "test: dev run test in docker-compose.dev.yml"
+	@echo "prod: build standalone prod image: ${PROD_DOCKER_IMAGE}"
+	# @echo "up: dev start local dev server with docker-compose"
+	@echo "lint: dev lint ${SOURCE_ROOT}"
+	@echo "format: dev reformat with yapf sort imports with isort"
+	@echo "-------------------"
+
+clean:
+	@echo "-------------------"
+	@echo "clean: clean all generated artifacts (docker-compose volumnes, build/, dist/, docs/_build/, *.pyc, etc)"
+	@echo "-------------------"
+	rm -fr build/
+	rm -fr dist/
+	rm -fr *.egg-info
+	rm -fr .eggs
+	find . -name '*.pyc' -exec rm -f {} +
+	find . -name '*.pyo' -exec rm -f {} +
+	find . -name '*~' -exec rm -f {} +
+	find ./${SOURCE_ROOT} -name '**__pycache__' -exec rm -rf {} +
+	find ./${TEST_ROOT} -name '**__pycache__' -exec rm -rf {} +
+	find . -name '.pytest_cache' -exec rm -rf {} +
+	find . -name '.coverage' -exec rm -rf {} +
+	find . -name 'test.db' -exec rm -f {} +
+	rm -fr ci_reports
+	find . -name '*.log' -exec rm -f {} +
+	rm -rf docs/_build
+	rm -rf docs/${SOURCE_ROOT}*.rst
+	rm -rf docs/modules.rst
+	docker-compose --file docker-compose.yml --file docker-compose.watch.yml --file docker-compose.test.yml down --volumes
+
+local: clean
+	@echo "-------------------"
+	@echo "setup local dev environment with pipenv"
+	@echo "-------------------"
+	pipenv sync --dev
+	pipenv run pip install --editable .
+
+base:
+	@echo "-------------------"
+	@echo "build base image (with cache): ${BASE_DOCKER_IMAGE}"
+	@echo "-------------------"
+	docker build --file Dockerfile.base --tag ${BASE_DOCKER_IMAGE} .
+
+lock: base
+	@echo "-------------------"
+	@echo "pipenv lock: ${BASE_DOCKER_IMAGE}"
+	@echo "-------------------"
+	docker container ls --all --filter name=${BASE_DOCKER_CONTAINER} --format '{{ .Names}}' | xargs -I'{}' docker rm '{}'
+	docker run --name ${BASE_DOCKER_CONTAINER} ${BASE_DOCKER_IMAGE} pipenv lock
+	docker cp ${BASE_DOCKER_CONTAINER}:/app/Pipfile.lock .
+
+publish-base:
+	@echo "-------------------"
+	@echo "publish: ${BASE_DOCKER_IMAGE}"
+	@echo "-------------------"
+	docker tag ${BASE_DOCKER_IMAGE} ${ORG}/${BASE_DOCKER_IMAGE}
+	docker push ${ORG}/${BASE_DOCKER_IMAGE}
+
+dev: base
+	@echo "-------------------"
+	@echo "build dev image (with cache) on top of base image: ${DEV_DOCKER_IMAGE}"
+	@echo "-------------------"
+	docker build --file Dockerfile.dev --tag ${DEV_DOCKER_IMAGE} .
+
+rebuild-base: clean
+	@echo "-------------------"
+	@echo "pipenv update and rebuild base image (without cache): ${BASE_DOCKER_IMAGE}"
+	@echo "-------------------"
+	docker build --no-cache --file Dockerfile.base --tag ${BASE_DOCKER_IMAGE} .
+
+rebuild-dev: base clean
+	@echo "-------------------"
+	@echo "rebuild dev image (without cache): ${DEV_DOCKER_IMAGE}"
+	@echo "-------------------"
+	docker build --no-cache --file Dockerfile.dev --tag ${DEV_DOCKER_IMAGE} .
+
+rebuild-all:
+	@echo "-------------------"
+	@echo "complete rebuild (without cache): ${BASE_DOCKER_IMAGE} and ${DEV_DOCKER_IMAGE}"
+	@echo "-------------------"
+	make rebuild-base
+	make rebuild-dev
+
+version: dev
+	@echo "-------------------"
+	@echo "show ${APP_NAME} version in ${DEV_DOCKER_IMAGE}"
+	@echo "-------------------"
+	docker run ${DEV_DOCKER_IMAGE} python setup.py --version
+
+test: dev
+	@echo "-------------------"
+	@echo "pytest via docker-compose.test.yml"
+	@echo "-------------------"
+	docker-compose --file docker-compose.yml --file docker-compose.test.yml down --volumes --remove-orphans
+	docker-compose --file docker-compose.yml --file docker-compose.test.yml up --exit-code-from orchestrator-tester
+
+
+regression-test: dev
+	@echo "-------------------"
+	@echo "regression test orchestrator <-> apiserver via docker-compose.test.yml (usage: make regression-test TEST_CASE=<some_test_name>)"
+	@echo "-------------------"
+	docker-compose --file docker-compose.yml --file docker-compose.regression.yml down --volumes --remove-orphans
+	docker-compose --file docker-compose.yml --file docker-compose.regression.yml up --exit-code-from regression-test
+
+
+watch-test: clean dev
+	@echo "-------------------"
+	@echo "pytest watch via docker-compose.watch.yml"
+	@echo "-------------------"
+	docker-compose --file docker-compose.yml --file docker-compose.watch.yml down --volumes --remove-orphans
+	docker-compose --file docker-compose.yml --file docker-compose.watch.yml run orchestrator-tester
+
+prod:
+	@echo "-------------------"
+	@echo "build standalone prod image: ${PROD_DOCKER_IMAGE}"
+	@echo "-------------------"
+	docker build --file Dockerfile --tag ${PROD_DOCKER_IMAGE} .
+
+lint: dev
+	@echo "-------------------"
+	@echo "linting SOURCE_ROOT: ${SOURCE_ROOT} ${TEST_ROOT}"
+	@echo "-------------------"
+	docker run ${DEV_DOCKER_IMAGE} pylint ${SOURCE_ROOT} --errors-only --jobs 4 ${SOURCE_ROOT} ${TEST_ROOT} --ignored-classes=SQLAlchemy,scoped_session,auto
+
+format: dev
+	@echo "-------------------"
+	@echo "reformat with yapf sort imports with isort"
+	@echo "-------------------"
+	docker run -v ${PWD}:/app ${DEV_DOCKER_IMAGE} yapf --recursive --in-place --parallel ${SOURCE_ROOT} ${TEST_ROOT}
+	docker run -v ${PWD}:/app ${DEV_DOCKER_IMAGE} isort --recursive --apply ${SOURCE_ROOT} ${TEST_ROOT}
+	@echo "*******************"
+	@echo "checking if files need formatting"
+	@echo "*******************"
+	docker run -v ${PWD}:/app ${DEV_DOCKER_IMAGE} detect-changes
+
+detect-changes: dev
+	@echo "-------------------"
+	@echo "detect any uncommitted changes to repo files"
+	@echo "-------------------"
+	docker run -v ${PWD}:/app ${DEV_DOCKER_IMAGE} detect-changes

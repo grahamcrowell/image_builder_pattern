@@ -1,0 +1,19 @@
+# follow docker builder pattern
+# https://matthiasnoback.nl/2017/04/docker-build-patterns/
+FROM python:3.8 AS base
+
+WORKDIR /app
+
+# RUN apk add gcc g++ libc-dev make postgresql-dev graphviz-dev libzmq zeromq zeromq-dev python3-dev bash git
+
+RUN pip install pip==20.0.2
+RUN pip install pipenv==2018.11.26
+COPY Pipfile* ./
+RUN pipenv install
+RUN pip install pipenv-to-requirements \
+ && pipenv run pipenv_to_requirements -f \
+ && sed -i '/^-e .$/d' requirements.txt \
+ && pip wheel --wheel-dir /app/wheels -r requirements.txt
+# only in Dockerfile.dev
+RUN sed -i '/^-e .$/d' requirements-dev.txt \
+ && pip wheel --wheel-dir /app/wheels -r requirements-dev.txt

@@ -1,0 +1,17 @@
+name: Integration Test
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: Pull Base If Stale
+        uses: grahamcrowell/github_action_remote_image_cache@master
+        with:
+          remote_base_image: grahamcrowell/github_action_remote_image_cache
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          watch_file_regex: Pipfile*
+      - name: Make Dev
+        uses: grahamcrowell/github_action_remote_image_cache@master
+        run: make dev
