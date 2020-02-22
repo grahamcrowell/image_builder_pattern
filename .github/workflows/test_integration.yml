@@ -8,11 +8,11 @@ jobs:
       - name: Pull Base If Stale
         uses: grahamcrowell/github_action_remote_image_cache@master
         with:
-          remote_base_image: grahamcrowell/github_action_remote_image_cache
-          name: grahamcrowell/github_action_remote_image_cache
+          remote_base_image: grahamcrowell/image_builder_pattern:base
+          name: grahamcrowell/image_builder_pattern
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}
           dockerfile: Dockerfile.base
           watch_file_regex: Pipfile*
-      - name: Make Dev
-        run: make dev
+      - name: Make Prod
+        run: make prod
