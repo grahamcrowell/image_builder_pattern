@@ -85,7 +85,7 @@ lint: dev
 	@echo "-------------------"
 	docker run ${DEV_DOCKER_IMAGE} pylint ${SOURCE_ROOT} --errors-only --jobs 4 ${SOURCE_ROOT} ${TEST_ROOT} --ignored-classes=SQLAlchemy,scoped_session,auto
 
-prod: base
+prod:
 	@echo "-------------------"
 	@echo "build standalone prod image: ${PROD_DOCKER_IMAGE}"
 	@echo "-------------------"
