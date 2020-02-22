@@ -1,0 +1,9 @@
+name: Without Cache Action
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: Make Prod
+        run: make prod

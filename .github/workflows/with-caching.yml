@@ -1,4 +1,4 @@
-name: Integration Test
+name: With Cache Action
 on: [push]
 jobs:
   build:
