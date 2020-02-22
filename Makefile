@@ -1,4 +1,4 @@
-APP_NAME=mock_python_app
+APP_NAME=grahamcrowell/image_builder_pattern
 BASE_DOCKER_TAG=base
 BASE_DOCKER_CONTAINER=${APP_NAME}-${BASE_DOCKER_TAG}
 BASE_DOCKER_IMAGE=${APP_NAME}:${BASE_DOCKER_TAG}
