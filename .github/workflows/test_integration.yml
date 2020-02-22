@@ -15,4 +15,4 @@ jobs:
           dockerfile: Dockerfile.base
           watch_file_regex: Pipfile*
       - name: Make Prod
-        run: make Prod
+        run: make prod
