@@ -58,33 +58,6 @@ rebuild-dev: base clean
 	@echo "-------------------"
 	docker build --no-cache --file Dockerfile.dev --tag ${DEV_DOCKER_IMAGE} .
 
-rebuild-all:
-	@echo "-------------------"
-	@echo "complete rebuild (without cache): ${BASE_DOCKER_IMAGE} and ${DEV_DOCKER_IMAGE}"
-	@echo "-------------------"
-	make rebuild-base
-	make rebuild-dev
-
-version: dev
-	@echo "-------------------"
-	@echo "show ${APP_NAME} version in ${DEV_DOCKER_IMAGE}"
-	@echo "-------------------"
-	docker run ${DEV_DOCKER_IMAGE} python setup.py --version
-
-test: dev
-	@echo "-------------------"
-	@echo "pytest via docker-compose.test.yml"
-	@echo "-------------------"
-	docker-compose --file docker-compose.yml --file docker-compose.test.yml down --volumes --remove-orphans
-	docker-compose --file docker-compose.yml --file docker-compose.test.yml up --exit-code-from orchestrator-tester
-
-
-lint: dev
-	@echo "-------------------"
-	@echo "linting SOURCE_ROOT: ${SOURCE_ROOT} ${TEST_ROOT}"
-	@echo "-------------------"
-	docker run ${DEV_DOCKER_IMAGE} pylint ${SOURCE_ROOT} --errors-only --jobs 4 ${SOURCE_ROOT} ${TEST_ROOT} --ignored-classes=SQLAlchemy,scoped_session,auto
-
 prod:
 	@echo "-------------------"
 	@echo "build standalone prod image: ${PROD_DOCKER_IMAGE}"
