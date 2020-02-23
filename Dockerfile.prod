@@ -3,11 +3,9 @@ FROM python:3.8
 WORKDIR /app
 # install static deps
 RUN pip install pip==20.0.2
-COPY --from=mock_python_app:base /app/wheels/*.whl /tmp/
+COPY --from=grahamcrowell/image_builder_pattern:base /app/wheels/*.whl /tmp/
 RUN pip install /tmp/*.whl
 # install editable rc-orchestrator
 COPY . .
 ENV PATH="/app/bin:${PATH}"
 # only in Dockerfile.dev
-RUN chmod +x /app/bin/regression_test.sh
-RUN pip install --editable .
