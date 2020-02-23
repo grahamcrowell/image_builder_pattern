@@ -13,6 +13,7 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}
           dockerfile: Dockerfile.base
-          watch_file_regex: Pipfile*
+          watch_git_diff: Pipfile*
+          watch_git_branch: origin/develop
       - name: Make Prod
         run: make prod
